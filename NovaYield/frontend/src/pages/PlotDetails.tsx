@@ -5,6 +5,8 @@ import ErrorState from '../components/common/ErrorState';
 import LoadingState from '../components/common/LoadingState';
 import { SequenceRail } from '../components/dss/charts';
 import { formatDay, label } from '../components/dss/format';
+import { AlertIcon } from '../components/icons';
+import PlotTabs from '../components/PlotTabs';
 
 export default function PlotDetails() {
   const { farmId = '' } = useParams();
@@ -32,74 +34,68 @@ export default function PlotDetails() {
     return () => { active = false; };
   }, [farmId]);
 
-  if (loading || loadedFarmId !== farmId) return <LoadingState message="Loading plot details…" />;
+  if (loading || loadedFarmId !== farmId) return <LoadingState message="Loading plot…" />;
   if (error || !farm) return <ErrorState message={error || 'This plot could not be found.'} />;
 
   const encodedFarmId = encodeURIComponent(farm.id);
 
   return (
-    <div className="page-container plot-detail-page">
-      <header className="page-heading-row">
-        <div>
-          <Link className="back-link" to="/plots">← My plots</Link>
-          <p className="kicker">Plot overview</p>
+    <div className="page">
+      <header className="page-header with-tabs">
+        <div className="page-head-main">
           <h1>{farm.name}</h1>
-          <p className="lede">Review this decision plot’s profile and dated crop history, then open its climate context or recommendation results.</p>
+          <p className="page-desc">{farm.location.label}</p>
         </div>
-        <Link className="secondary-btn" to={`/plots/${encodedFarmId}/edit`}>Edit plot</Link>
+        <div className="page-actions">
+          <Link className="btn btn-secondary" to={`/plots/${encodedFarmId}/edit`}>Edit plot</Link>
+          <Link className="btn btn-primary" to={`/plots/${encodedFarmId}/recommendations`}>View recommendations</Link>
+        </div>
       </header>
+      <PlotTabs farmId={farm.id} />
 
-      {farm.history_status !== 'complete' && (
-        <p className="alert alert-warning">This plot needs actual dated crop history before a new recommendation can be generated. Legacy crop names have not been converted into dated events.</p>
-      )}
+      <div className="stack page-body">
+        {farm.history_status !== 'complete' && (
+          <p className="alert alert-warning">
+            <AlertIcon />
+            This plot needs actual dated crop history before a new recommendation can be generated. Legacy crop names have not been converted into dated events.
+          </p>
+        )}
 
-      <section className="plot-detail-card" aria-labelledby="plot-profile-heading">
-        <div className="section-heading">
-          <div>
-            <p className="kicker">Farm profile</p>
-            <h2 id="plot-profile-heading">Plot details</h2>
+        <section className="panel" aria-labelledby="plot-profile-heading">
+          <div className="panel-header">
+            <h2 className="panel-title" id="plot-profile-heading">Plot details</h2>
           </div>
-        </div>
-        <dl className="plot-detail-grid">
-          <div><dt>Supported location</dt><dd>{farm.location.label}</dd></div>
-          <div><dt>Soil context</dt><dd>{farm.soil_texture?.label || 'Not provided'}</dd></div>
-          <div><dt>Irrigation access</dt><dd>{farm.irrigation_access?.label || 'Not provided'}</dd></div>
-          <div><dt>Available labour</dt><dd>{farm.labour_capacity || 'Not provided'}</dd></div>
-          <div><dt>Main priority</dt><dd>{farm.farmer_priority ? label(farm.farmer_priority) : 'No additional priority'}</dd></div>
-          <div><dt>Available from</dt><dd>{farm.available_from ? formatDay(farm.available_from) : 'Based on latest harvest and today'}</dd></div>
-        </dl>
-      </section>
+          <dl className="panel-body kv">
+            <div><dt>Location</dt><dd>{farm.location.label}</dd></div>
+            <div><dt>Soil texture</dt><dd>{farm.soil_texture?.label || 'Not provided'}</dd></div>
+            <div><dt>Irrigation access</dt><dd>{farm.irrigation_access?.label || 'Not provided'}</dd></div>
+            <div><dt>Labour capacity</dt><dd>{farm.labour_capacity || 'Not provided'}</dd></div>
+            <div><dt>Main priority</dt><dd>{farm.farmer_priority ? label(farm.farmer_priority) : 'None'}</dd></div>
+            <div><dt>Available from</dt><dd>{farm.available_from ? formatDay(farm.available_from) : 'Latest harvest or today'}</dd></div>
+          </dl>
+        </section>
 
-      <section className="plot-detail-card" aria-labelledby="history-heading">
-        <div className="section-heading">
-          <div>
-            <p className="kicker">Farmer-reported history</p>
-            <h2 id="history-heading">Past crop events</h2>
+        <section className="panel" aria-labelledby="history-heading">
+          <div className="panel-header">
+            <div>
+              <h2 className="panel-title" id="history-heading">Crop history</h2>
+              <p className="panel-sub">Reported by you, oldest first.</p>
+            </div>
+            <span className="badge">{farm.crop_history.length} event{farm.crop_history.length === 1 ? '' : 's'}</span>
           </div>
-          <span className="meta-chip">{farm.crop_history.length} event{farm.crop_history.length === 1 ? '' : 's'}</span>
-        </div>
-        {farm.crop_history.length ? (
-          <SequenceRail steps={farm.crop_history.map((event) => ({
-            key: event.crop.key,
-            name: event.crop.label,
-            detail: event.start_date && event.end_date
-              ? `${formatDay(event.start_date)} – ${formatDay(event.end_date)}`
-              : 'Dates need review',
-          }))} />
-        ) : <p>No dated crop events are recorded for this plot.</p>}
-      </section>
-
-      <section className="plot-next-steps" aria-labelledby="next-steps-heading">
-        <div>
-          <p className="kicker">Plot workspace</p>
-          <h2 id="next-steps-heading">What would you like to review?</h2>
-          <p>Environmental context and recommendations are kept on separate pages so each view has a clear purpose.</p>
-        </div>
-        <div className="saved-farm-actions">
-          <Link className="secondary-btn" to={`/plots/${encodedFarmId}/environment`}>View environmental context</Link>
-          <Link className="submit-btn" to={`/plots/${encodedFarmId}/recommendations`}>View recommendations</Link>
-        </div>
-      </section>
+          <div className="panel-body">
+            {farm.crop_history.length ? (
+              <SequenceRail large steps={farm.crop_history.map((event) => ({
+                key: event.crop.key,
+                name: event.crop.label,
+                detail: event.start_date && event.end_date
+                  ? `${formatDay(event.start_date)} – ${formatDay(event.end_date)}`
+                  : 'Dates need review',
+              }))} />
+            ) : <p className="muted">No dated crop events are recorded for this plot.</p>}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

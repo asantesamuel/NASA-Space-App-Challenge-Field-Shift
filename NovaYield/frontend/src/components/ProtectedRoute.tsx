@@ -1,11 +1,12 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
+import LoadingState from './common/LoadingState';
 
 export default function ProtectedRoute() {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) {
-    return <div className="page-container" role="status">Checking your session…</div>;
+    return <LoadingState message="Checking your session…" />;
   }
 
   // Redirect to login if not authenticated

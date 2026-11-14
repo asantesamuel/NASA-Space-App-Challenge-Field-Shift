@@ -1,26 +1,28 @@
 /** Display helpers. They format values already returned by the API. */
 
+/* One distinguishable hue per crop; each keeps 4.5:1 contrast with white text. */
 const CROP_COLORS: Record<string, string> = {
-  maize: '#3c7650',
-  cowpea: '#237347',
-  groundnut: '#568364',
-  cassava: '#326648',
-  yam: '#668e71',
-  rice: '#1c5a39',
-  'rice-upland': '#497858',
-  'rice-rain-fed-lowland': '#2e6c48',
-  'rice-irrigated': '#154a31',
-  plantain: '#5c8265',
-  sorghum: '#416f50',
+  maize: '#966512',
+  cowpea: '#3b6a96',
+  groundnut: '#8c4f35',
+  cassava: '#4a7a35',
+  yam: '#6f5199',
+  rice: '#1d7068',
+  'rice-upland': '#1d7068',
+  'rice-rain-fed-lowland': '#1d7068',
+  'rice-irrigated': '#1d7068',
+  plantain: '#76801a',
+  sorghum: '#a04431',
 };
+const DEFAULT_CROP_COLOR = '#4b5a52';
 
 export function label(value: string): string {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export function cropColor(cropKey: string | null | undefined): string {
-  if (!cropKey) return '#1b6b43';
-  return CROP_COLORS[cropKey] ?? '#1b6b43';
+  if (!cropKey) return DEFAULT_CROP_COLOR;
+  return CROP_COLORS[cropKey] ?? DEFAULT_CROP_COLOR;
 }
 
 export function formatDay(iso: string | null | undefined): string {

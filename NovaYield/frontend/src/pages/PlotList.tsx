@@ -9,6 +9,7 @@ import ErrorState from '../components/common/ErrorState';
 import LoadingState from '../components/common/LoadingState';
 import { SequenceRail, StatusPill } from '../components/dss/charts';
 import { formatDay, label } from '../components/dss/format';
+import { AlertIcon, PlusIcon, SproutIcon } from '../components/icons';
 
 export default function PlotList() {
   const [farms, setFarms] = useState<FarmResponse[]>([]);
@@ -59,93 +60,87 @@ export default function PlotList() {
   if (error) return <ErrorState message={error} onRetry={() => { setLoading(true); void loadPlots(); }} />;
 
   return (
-    <div className="page-container field-page">
-      <header className="page-heading-row">
-        <div>
-          <p className="kicker">Workspace</p>
+    <div className="page">
+      <header className="page-header">
+        <div className="page-head-main">
           <h1>My plots</h1>
-          <p className="lede">Open a plot to review its profile, historical climate context, and rotation recommendations.</p>
+          <p className="page-desc">Open a plot to review its profile, historical climate, and rotation recommendations.</p>
         </div>
-        <Link className="submit-btn" to="/plots/new">Add a plot</Link>
+        <div className="page-actions">
+          <Link className="btn btn-primary" to="/plots/new"><PlusIcon />Add plot</Link>
+        </div>
       </header>
 
       {farms.length === 0 ? (
-        <section className="empty-state plot-empty-state">
+        <section className="empty">
+          <span className="empty-icon"><SproutIcon /></span>
           <h2>No plots yet</h2>
-          <p>Add a decision plot and enter the crop events you know. NovaYield will keep each plot and its recommendations together.</p>
-          <Link className="submit-btn" to="/plots/new">Set up your first plot</Link>
+          <p>Add a plot and enter the crops you have grown on it. NovaYield keeps each plot and its recommendations together.</p>
+          <Link className="btn btn-primary" to="/plots/new">Set up your first plot</Link>
         </section>
       ) : (
-        <section className="saved-farms" aria-labelledby="saved-farms-heading">
-          <div className="section-heading">
-            <div>
-              <p className="kicker">Farm workspace</p>
-              <h2 id="saved-farms-heading">Saved plots</h2>
-            </div>
-            <span className="meta-chip">{farms.length} plot{farms.length === 1 ? '' : 's'}</span>
+        <section className="panel" aria-labelledby="saved-plots-heading">
+          <div className="panel-header">
+            <h2 className="panel-title" id="saved-plots-heading">Saved plots</h2>
+            <span className="badge">{farms.length} plot{farms.length === 1 ? '' : 's'}</span>
           </div>
 
           <ul className="plot-list">
             {farms.map((farm) => {
               const climate = climateStatuses[farm.id];
               const climateSummary = climate?.data_through
-                ? `Stored regional climate through ${formatDay(climate.data_through)}${climate.spatial_resolution ? ` · ${climate.spatial_resolution}` : ''}`
-                : climate?.safe_message || 'Climate archive status has not been checked yet.';
+                ? `Through ${formatDay(climate.data_through)}${climate.spatial_resolution ? ` · ${climate.spatial_resolution}` : ''}`
+                : climate?.safe_message || 'Climate status not checked yet.';
+              const id = encodeURIComponent(farm.id);
 
               return (
-                <li key={farm.id} className="plot-card">
-                  <div className="plot-card-top">
+                <li key={farm.id} className="plot-row">
+                  <div>
+                    <Link className="plot-name" to={`/plots/${id}`}>{farm.name}</Link>
+                    <ul className="meta-list plot-facts" aria-label="Plot details">
+                      <li>{farm.location.label}</li>
+                      {farm.soil_texture && <li>{farm.soil_texture.label} soil</li>}
+                      {farm.labour_capacity && <li>{farm.labour_capacity} labour</li>}
+                      <li>{farm.farmer_priority ? label(farm.farmer_priority) : 'No priority'}</li>
+                    </ul>
+                  </div>
+
+                  <div className="plot-actions">
+                    <Link className="btn btn-secondary btn-sm" to={`/plots/${id}`}>View</Link>
+                    <Link className="btn btn-primary btn-sm" to={`/plots/${id}/recommendations`}>Recommendations</Link>
+                  </div>
+
+                  <div className="plot-body">
                     <div>
-                      <p className="kicker">Decision plot</p>
-                      <h3><Link to={`/plots/${encodeURIComponent(farm.id)}`}>{farm.name}</Link></h3>
-                      <p>{farm.location.label}</p>
+                      <p className="col-label">Crop history</p>
+                      {farm.crop_history.length > 0 ? (
+                        <SequenceRail steps={farm.crop_history.map((event) => ({
+                          key: event.crop.key,
+                          name: event.crop.label,
+                          detail: event.start_date && event.end_date
+                            ? `${formatDay(event.start_date)} – ${formatDay(event.end_date)}`
+                            : 'Dates need review',
+                        }))} />
+                      ) : (
+                        <p className="alert alert-warning"><AlertIcon />Needs dated crop history</p>
+                      )}
                     </div>
-                    <StatusPill status={climate?.status || 'pending'} />
-                  </div>
 
-                  <div className="plot-summary-grid" aria-label="Plot details">
-                    {farm.soil_texture && <span><small>Soil context</small><strong>{farm.soil_texture.label}</strong></span>}
-                    {farm.irrigation_access && <span><small>Irrigation access</small><strong>{farm.irrigation_access.label}</strong></span>}
-                    {farm.labour_capacity && <span><small>Labour capacity</small><strong>{farm.labour_capacity}</strong></span>}
-                    <span><small>Priority</small><strong>{farm.farmer_priority ? label(farm.farmer_priority) : 'No preference'}</strong></span>
-                  </div>
-
-                  {farm.crop_history.length > 0 ? (
-                    <div className="plot-history-preview">
-                      <div className="history-preview-heading">
-                        <strong>Reported crop history</strong>
-                        <span>{farm.crop_history.length} dated event{farm.crop_history.length === 1 ? '' : 's'}</span>
+                    <div>
+                      <p className="col-label">Climate data</p>
+                      <div className="plot-climate">
+                        <StatusPill status={climate?.status || 'pending'} />
+                        <span>{climateSummary}</span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          disabled={statusLoading !== null}
+                          onClick={() => void refreshClimateStatus(farm.id)}
+                        >
+                          {statusLoading === farm.id ? 'Checking…' : 'Refresh'}
+                        </button>
                       </div>
-                      <SequenceRail steps={farm.crop_history.map((event) => ({
-                        key: event.crop.key,
-                        name: event.crop.label,
-                        detail: event.start_date && event.end_date
-                          ? `${formatDay(event.start_date)} – ${formatDay(event.end_date)}`
-                          : 'Dates need review',
-                      }))} />
                     </div>
-                  ) : (
-                    <p className="alert alert-warning plot-warning">This plot needs dated crop history before it can be used for a new recommendation.</p>
-                  )}
-
-                  <div className="plot-climate-status">
-                    <div>
-                      <strong>Environmental context</strong>
-                      <p>{climateSummary}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-btn"
-                      disabled={statusLoading !== null}
-                      onClick={() => void refreshClimateStatus(farm.id)}
-                    >
-                      {statusLoading === farm.id ? 'Checking…' : 'Refresh status'}
-                    </button>
-                  </div>
-
-                  <div className="saved-farm-actions">
-                    <Link className="secondary-btn" to={`/plots/${encodeURIComponent(farm.id)}`}>View plot</Link>
-                    <Link className="submit-btn" to={`/plots/${encodeURIComponent(farm.id)}/recommendations`}>Open recommendations</Link>
                   </div>
                 </li>
               );
