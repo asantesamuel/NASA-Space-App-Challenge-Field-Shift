@@ -10,18 +10,18 @@ export default function DataSourceBadge({ status, source, dateRange, resolution,
   const label = status === 'live'
     ? 'Retrieved from NASA POWER'
     : status === 'cached'
-      ? 'Reused stored NASA POWER data'
+      ? 'Stored NASA POWER data'
       : status === 'unavailable'
         ? 'NASA data unavailable'
         : `Data status: ${status.replaceAll('_', ' ')}`;
 
   return (
-    <div className="source-badge">
-      <strong>{label}</strong>
+    <div className="source-row">
+      <span><b>{label}</b></span>
       <span>{source}</span>
-      <span>Historical period: {dateRange}</span>
-      {resolution && <span>Grid resolution: {resolution}</span>}
-      {retrievedAt && <span>Retrieved: {new Date(retrievedAt).toLocaleString()}</span>}
+      <span>Period: {dateRange}</span>
+      {resolution && <span>Grid: {resolution}</span>}
+      {retrievedAt && <span>Retrieved {new Date(retrievedAt).toLocaleString()}</span>}
     </div>
   );
 }
