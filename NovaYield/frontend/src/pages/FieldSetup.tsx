@@ -11,6 +11,9 @@ import {
   type RiceSystem,
   type SupportedLocationsResponse,
 } from '../api/farms';
+import ErrorState from '../components/common/ErrorState';
+import LoadingState from '../components/common/LoadingState';
+import { AlertIcon, ArrowLeftIcon, PlusIcon } from '../components/icons';
 
 interface CropEventRow {
   id: number;
@@ -168,127 +171,165 @@ export default function FieldSetup() {
     }
   };
 
-  if (catalogLoading || farmLoading || (farmId && loadedFarmId !== farmId)) return <div className="page-container"><p role="status">Loading plot setup…</p></div>;
-  if (farmError) return <div className="page-container"><p className="alert alert-error" role="alert">{farmError}</p><Link to="/plots">Back to my plots</Link></div>;
+  if (catalogLoading || farmLoading || (farmId && loadedFarmId !== farmId)) return <LoadingState message="Loading plot setup…" />;
+  if (farmError) {
+    return <ErrorState title="Could not open this plot" message={farmError} />;
+  }
+
+  const backTo = editingFarm ? `/plots/${encodeURIComponent(editingFarm.id)}` : '/plots';
+  const selectedSoil = references?.soil_textures.find((option) => option.key === soilKey);
+  const selectedIrrigation = references?.irrigation_access.find((option) => option.key === irrigationKey);
 
   return (
-    <div className="page-container field-page">
-      <section className="form-card" aria-labelledby="setup-heading">
-        <div className="form-header">
-          <Link className="back-link" to={editingFarm ? `/plots/${encodeURIComponent(editingFarm.id)}` : '/plots'}>
-            {editingFarm ? `← ${editingFarm.name}` : '← My plots'}
+    <div className="page page-narrow">
+      <header className="page-header">
+        <div className="page-head-main">
+          <Link className="back-link btn btn-ghost btn-sm" to={backTo}>
+            <ArrowLeftIcon />{editingFarm ? editingFarm.name : 'My plots'}
           </Link>
-          <p className="kicker">{editingFarm ? 'Farm management' : 'Add a plot'}</p>
-          <h1 id="setup-heading">{editingFarm ? `Edit ${editingFarm.name}` : 'Set up a plot'}</h1>
-          <p>Enter one to three dated crop events for one decision plot. NovaYield uses the location key to resolve its private reference point; coordinates are not returned to the screen.</p>
+          <h1 id="setup-heading">{editingFarm ? `Edit ${editingFarm.name}` : 'Add a plot'}</h1>
+          <p className="page-desc">Describe one plot and the crops you have grown on it. NovaYield resolves the location to a private reference point and never shows coordinates.</p>
         </div>
+      </header>
 
-        {catalogError && <p className="alert alert-error" role="alert">{catalogError}</p>}
-        {!catalogError && locations && references && (
-          <form onSubmit={handleSubmit} className="form-grid">
-                {editingFarm?.history_status === 'legacy_unresolved' && (
-                  <p className="alert alert-warning form-span">This older profile contains crop text without dates. Re-enter only the crop events and dates you know; NovaYield has not inferred any of them.</p>
-                )}
-                <p className="alert alert-warning form-span">{locations.coverage_notice} Locations are supported place references. NASA climate represents a regional grid cell, not a sensor on this plot.</p>
-                <div className="form-group">
-                  <label htmlFor="plot-name">Plot name</label>
-                  <input id="plot-name" className="form-input" required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} placeholder="For example, North plot" />
+      {catalogError && <p className="alert alert-error" role="alert"><AlertIcon />{catalogError}</p>}
+      {!catalogError && locations && references && (
+        <form onSubmit={handleSubmit} aria-labelledby="setup-heading" className="panel">
+          <div className="panel-body">
+            {editingFarm?.history_status === 'legacy_unresolved' && (
+              <p className="alert alert-warning mb-6">
+                <AlertIcon />
+                This older profile contains crop text without dates. Re-enter only the crop events and dates you know; NovaYield has not inferred any of them.
+              </p>
+            )}
+
+            <fieldset className="form-section">
+              <div className="form-section-head">
+                <h2>Plot</h2>
+                <p>{locations.coverage_notice} NASA climate represents a regional grid cell, not a sensor on this plot.</p>
+              </div>
+              <div className="form-grid">
+                <div className="field">
+                  <label className="label" htmlFor="plot-name">Plot name</label>
+                  <input id="plot-name" className="input" required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} placeholder="North plot" />
                 </div>
-                <div className="form-group">
-                  <label htmlFor="location">Supported location</label>
-                  <select id="location" className="form-select" required value={locationKey} onChange={(event) => setLocationKey(event.target.value)}>
+                <div className="field">
+                  <label className="label" htmlFor="location">Location</label>
+                  <select id="location" className="select" required value={locationKey} onChange={(event) => setLocationKey(event.target.value)}>
                     <option value="">Choose a location</option>
                     {locations.locations.map((item) => <option key={item.location_key} value={item.location_key}>{item.label}</option>)}
                   </select>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="soil">Soil texture</label>
-                  <select id="soil" className="form-select" required value={soilKey} onChange={(event) => setSoilKey(event.target.value)}>
+              </div>
+            </fieldset>
+
+            <fieldset className="form-section">
+              <div className="form-section-head">
+                <h2>Conditions and capacity</h2>
+                <p>These are recorded as context. Soil and irrigation are not measurements and do not change the score on their own.</p>
+              </div>
+              <div className="form-grid">
+                <div className="field">
+                  <label className="label" htmlFor="soil">Soil texture</label>
+                  <select id="soil" className="select" required value={soilKey} onChange={(event) => setSoilKey(event.target.value)}>
                     <option value="">Choose an option</option>
                     {references.soil_textures.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
                   </select>
-                  {soilKey && <small>{references.soil_textures.find((option) => option.key === soilKey)?.definition}</small>}
-                  <small>Soil texture is recorded as context; it is not a water-storage measurement or scoring input.</small>
+                  {selectedSoil?.definition && <span className="hint">{selectedSoil.definition}</span>}
                 </div>
-                <div className="form-group">
-                  <label htmlFor="irrigation">Irrigation access</label>
-                  <select id="irrigation" className="form-select" required value={irrigationKey} onChange={(event) => setIrrigationKey(event.target.value)}>
+                <div className="field">
+                  <label className="label" htmlFor="irrigation">Irrigation access</label>
+                  <select id="irrigation" className="select" required value={irrigationKey} onChange={(event) => setIrrigationKey(event.target.value)}>
                     <option value="">Choose an option</option>
                     {references.irrigation_access.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
                   </select>
-                  {irrigationKey && <small>{references.irrigation_access.find((option) => option.key === irrigationKey)?.definition}</small>}
-                  <small>Irrigation access does not reveal how much water reaches a crop.</small>
+                  <span className="hint">{selectedIrrigation?.definition || 'Access does not show how much water reaches a crop.'}</span>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="labour">Available labour capacity</label>
-                  <select id="labour" className="form-select" required value={labourCapacity} onChange={(event) => setLabourCapacity(event.target.value as LabourCapacity | '')}>
+                <div className="field">
+                  <label className="label" htmlFor="labour">Labour capacity</label>
+                  <select id="labour" className="select" required value={labourCapacity} onChange={(event) => setLabourCapacity(event.target.value as LabourCapacity | '')}>
                     <option value="">Choose a capacity</option>
                     {references.labour_capacity.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
                   </select>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="priority">One main priority (optional)</label>
-                  <select id="priority" className="form-select" value={farmerPriority} onChange={(event) => setFarmerPriority(event.target.value as FarmerPriority | '')}>
+                <div className="field">
+                  <label className="label" htmlFor="priority">Main priority <span className="opt">(optional)</span></label>
+                  <select id="priority" className="select" value={farmerPriority} onChange={(event) => setFarmerPriority(event.target.value as FarmerPriority | '')}>
                     <option value="">No additional priority</option>
                     {references.farmer_priorities.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
                   </select>
-                  <small>Selecting a priority changes relative emphasis; it cannot override crop, labour, or calendar constraints.</small>
+                  <span className="hint">Shifts the relative emphasis. It cannot override crop, labour, or calendar constraints.</span>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="available-from">Earliest date this plot is available (optional)</label>
-                  <input id="available-from" className="form-input" type="date" min={historyRows.at(-1)?.endDate || undefined} value={availableFrom} onChange={(event) => setAvailableFrom(event.target.value)} />
-                  <small>If left blank, NovaYield starts scheduling from the later of today and your latest reported harvest.</small>
+                <div className="field">
+                  <label className="label" htmlFor="available-from">Available from <span className="opt">(optional)</span></label>
+                  <input id="available-from" className="input" type="date" min={historyRows.at(-1)?.endDate || undefined} value={availableFrom} onChange={(event) => setAvailableFrom(event.target.value)} />
+                  <span className="hint">Leave blank to start from the later of today and your latest reported harvest.</span>
                 </div>
+              </div>
+            </fieldset>
 
-                <section className="form-span form-section" aria-labelledby="history-heading">
-                  <h2 id="history-heading">Past crop events</h2>
-                  <p>Enter one to three events, oldest first. Gaps between events are allowed and mean the plot was idle for some period. Overlapping events are not supported by this MVP.</p>
-                  {historyRows.map((row, index) => (
-                    <div key={row.id} className="history-row">
-                      <div className="history-row-heading">
-                        <h3>Event {index + 1}</h3>
-                        {historyRows.length > 1 && <button type="button" className="text-btn" onClick={() => setHistoryRows((rows) => rows.filter((item) => item.id !== row.id))}>Remove</button>}
-                      </div>
-                      <div className="history-row-grid">
-                        <div className="form-group">
-                          <label htmlFor={`crop-${row.id}`}>Crop</label>
-                          <select id={`crop-${row.id}`} className="form-select" required value={row.cropKey} onChange={(event) => updateRow(row.id, { cropKey: event.target.value, riceSystem: '' })}>
-                            <option value="">Choose a crop</option>
-                            {crops.map((crop) => <option key={crop.id} value={crop.crop_key}>{crop.common_name}</option>)}
-                          </select>
-                        </div>
-                        {row.cropKey === 'rice' && (
-                          <div className="form-group">
-                            <label htmlFor={`rice-system-${row.id}`}>Rice production system</label>
-                            <select id={`rice-system-${row.id}`} className="form-select" value={row.riceSystem} onChange={(event) => updateRow(row.id, { riceSystem: event.target.value as RiceSystem | '' })}>
-                              <option value="">Choose or select “I do not know”</option>
-                              {references.rice_production_systems.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
-                            </select>
-                            <small>Unknown stays unknown; irrigation access does not infer rice ecology.</small>
-                          </div>
-                        )}
-                        <div className="form-group">
-                          <label htmlFor={`start-${row.id}`}>Planting date</label>
-                          <input id={`start-${row.id}`} className="form-input" type="date" required max={todayUtc()} value={row.startDate} onChange={(event) => updateRow(row.id, { startDate: event.target.value })} />
-                        </div>
-                        <div className="form-group">
-                          <label htmlFor={`end-${row.id}`}>Harvest or removal date</label>
-                          <input id={`end-${row.id}`} className="form-input" type="date" required max={todayUtc()} value={row.endDate} onChange={(event) => updateRow(row.id, { endDate: event.target.value })} />
-                        </div>
-                      </div>
+            <fieldset className="form-section" aria-labelledby="history-heading">
+              <div className="form-section-head">
+                <h2 id="history-heading">Crop history</h2>
+                <p>Enter one to three events, oldest first. Gaps are fine and mean the plot sat idle. Overlapping events are not supported.</p>
+              </div>
+              {historyRows.map((row, index) => (
+                <div key={row.id} className="repeat-item">
+                  <div className="repeat-head">
+                    <h3>Event {index + 1}</h3>
+                    {historyRows.length > 1 && (
+                      <button type="button" className="btn btn-danger-ghost btn-sm" onClick={() => setHistoryRows((rows) => rows.filter((item) => item.id !== row.id))}>Remove</button>
+                    )}
+                  </div>
+                  <div className="repeat-grid">
+                    <div className="field">
+                      <label className="label" htmlFor={`crop-${row.id}`}>Crop</label>
+                      <select id={`crop-${row.id}`} className="select" required value={row.cropKey} onChange={(event) => updateRow(row.id, { cropKey: event.target.value, riceSystem: '' })}>
+                        <option value="">Choose a crop</option>
+                        {crops.map((crop) => <option key={crop.id} value={crop.crop_key}>{crop.common_name}</option>)}
+                      </select>
                     </div>
-                  ))}
-                  {historyRows.length < 3 && <button type="button" className="secondary-btn" onClick={() => setHistoryRows((rows) => [...rows, { id: nextRowId.current++, cropKey: '', startDate: '', endDate: '', riceSystem: '' }])}>Add another event</button>}
-                </section>
-
-                {submitError && <p className="alert alert-error form-span" role="alert">{submitError}</p>}
-                <div className="form-actions">
-                  <button type="submit" disabled={submitting} className="submit-btn">{submitting ? 'Saving plot…' : editingFarm ? 'Save plot changes' : 'Save plot'}</button>
-                  <Link className="secondary-btn" to={editingFarm ? `/plots/${encodeURIComponent(editingFarm.id)}` : '/plots'}>Cancel</Link>
+                    {row.cropKey === 'rice' && (
+                      <div className="field">
+                        <label className="label" htmlFor={`rice-system-${row.id}`}>Rice production system</label>
+                        <select id={`rice-system-${row.id}`} className="select" value={row.riceSystem} onChange={(event) => updateRow(row.id, { riceSystem: event.target.value as RiceSystem | '' })}>
+                          <option value="">Choose a system</option>
+                          {references.rice_production_systems.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                        </select>
+                        <span className="hint">Unknown stays unknown. Irrigation access does not imply a system.</span>
+                      </div>
+                    )}
+                    <div className="field">
+                      <label className="label" htmlFor={`start-${row.id}`}>Planted</label>
+                      <input id={`start-${row.id}`} className="input" type="date" required max={todayUtc()} value={row.startDate} onChange={(event) => updateRow(row.id, { startDate: event.target.value })} />
+                    </div>
+                    <div className="field">
+                      <label className="label" htmlFor={`end-${row.id}`}>Harvested or removed</label>
+                      <input id={`end-${row.id}`} className="input" type="date" required max={todayUtc()} value={row.endDate} onChange={(event) => updateRow(row.id, { endDate: event.target.value })} />
+                    </div>
+                  </div>
                 </div>
-              </form>
-        )}
-      </section>
+              ))}
+              {historyRows.length < 3 && (
+                <div>
+                  <button type="button" className="btn btn-secondary" onClick={() => setHistoryRows((rows) => [...rows, { id: nextRowId.current++, cropKey: '', startDate: '', endDate: '', riceSystem: '' }])}>
+                    <PlusIcon />Add another event
+                  </button>
+                </div>
+              )}
+            </fieldset>
+
+            {submitError && <p className="alert alert-error mt-6" role="alert"><AlertIcon />{submitError}</p>}
+
+            <div className="form-actions">
+              <Link className="btn btn-secondary" to={backTo}>Cancel</Link>
+              <button type="submit" disabled={submitting} className="btn btn-primary">
+                {submitting ? 'Saving…' : editingFarm ? 'Save changes' : 'Save plot'}
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

@@ -136,6 +136,16 @@ Every farm/result lookup is constrained by both authenticated owner and resource
 - Climate not mapped or not loaded: return the safe state and null findings; do not call NASA in the request. Operator mapping/loading is separate.
 - Partial weather: preserve per-variable missingness and coverage. A valid adverse indicator may be explained, but unavailable parameters do not acquire values.
 - No valid crop/calendar sequence within the horizon: return an empty option list and a reason. Never relax hard constraints to force three results.
+
+New scheduled events can include optional `calendar_evidence` with `source_url`,
+`window_basis`, `applicability` and `limitations`. The selected calendar title,
+status and version remain on the event. Saved results retain the evidence available
+at generation time. Earlier results may omit the evidence object.
+
+Operators can apply the three provisional Kintampo North windows through the
+existing `python -m app.farms.seed_catalogs` command in the intended environment.
+See the [GAEZ suitability evidence](../../analysis_docs/research/field-shift-gaez-suitability.md)
+and the [offline rainfall audit runbook](rainfall-audit.md).
 - A profile with historical rice ecology `unknown` is preserved as history, not used as a future rice recommendation.
 - A disabled crop or missing location-specific calendar is not substituted with a similar item/window at runtime. Similar-crop analogues belong in the documented seed evidence, not automatic inference during requests.
 

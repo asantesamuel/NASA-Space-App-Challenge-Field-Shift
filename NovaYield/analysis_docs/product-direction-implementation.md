@@ -125,7 +125,8 @@ Seeded calendars are deliberately scoped:
 - Ejura and Anyinasu maize major/minor examples use the Ghana MoFA transition-zone guide and are marked provisional.
 - Ejura and Anyinasu cowpea minor window uses a Ghana-wide source; local adaptation is unvalidated.
 - Anyinasu yam window is based on a local study's key-informant report and remains provisional.
-- No inferred Groundnut, Cassava or Rice windows are added. Kintampo has no planted crop windows, so the scheduler correctly yields no sequence there until location-specific evidence is supplied.
+- The Field Shift follow-up adds provisional Kintampo North maize major/minor and yam major windows under `product-direction-kintampo-v1`. Apply them with the existing catalog seed command. See the [FAO suitability evidence](research/field-shift-gaez-suitability.md) for regional context and the crop mapping limits.
+- Groundnut, cassava and rice remain without inferred planting windows.
 
 Public source locations are inhabited-place references, not farm-specific survey coordinates. Their mappings to NASA-returned grid cells were checked with one-day live requests and used for the controlled loads above; local confirmation is still needed before describing them as representative of individual farms. The NASA API's official [Daily API documentation](https://power.larc.nasa.gov/docs/services/api/temporal/daily/) and [meteorological data-source notes](https://power.larc.nasa.gov/docs/methodology/data/sources_meteorology/) explain the daily service and source products. Live response metadata remains authoritative for units, fill values and resolution.
 
@@ -167,7 +168,7 @@ Authentication remains the existing email/password HttpOnly cookie session with 
 
 The live one-day request validated the adapter. Each supported location was mapped with one-day NASA requests, and the returned NASA cell geometries/keys were persisted in the configured MongoDB without exposing coordinates. The controlled historical loads then completed for all three distinct cells, in five resumable chunks per cell, from 1981-01-01 through 2026-11-06. Each cell has **16,746 daily records and 16,746 distinct dates**, with **zero null/missing values** across `rain_mm`, `t2m_c`, and `t2m_max_c`; all five chunks completed, with no failed chunks or stored safe errors. The required unique `(cell_key, day)` database index is present and verified. This verifies provider coverage for these periods in the current database; it does not make the town reference points farm-specific or imply on-farm observations. NASA may revise recent values, which is why weekly refresh remains a separate operation.
 
-The idempotent catalog seed was also run against the configured NovaYield database and verified through the repositories: 8 history crops, 8 enabled recommendation profiles (including 3 rice systems), 3 Ejura calendar rows, 4 Anyinasu calendar rows, 0 Kintampo calendar rows, and active `product-direction-config-v1`. All three supported places now resolve to a `ready` climate cell with `data_through=2026-11-06`. Kintampo still has no location-specific crop calendar rows, so its scheduler must not invent a planting window or produce a valid rotation sequence until evidence-backed calendar rows are added.
+The 9 November development catalog verification found 8 history crops, 8 enabled recommendation profiles (including 3 rice systems), 3 Ejura calendar rows, 4 Anyinasu calendar rows, 0 Kintampo calendar rows, and active `product-direction-config-v1`. All three places resolved to a `ready` climate cell with `data_through=2026-11-06`. That database check predates the Field Shift Kintampo seed revision.
 
 ### Still required before rollout
 
@@ -175,7 +176,7 @@ The idempotent catalog seed was also run against the configured NovaYield databa
 2. The idempotent catalog seed has been run and verified in the configured NovaYield database. For another environment, confirm the target database before running the documented seed and any legacy-history marker.
 3. The configured development database has complete archives for Ejura, Anyinasu and Kintampo through 6 November 2026. For another environment, map and load its intended cells deliberately; do not assume this local database is shared.
 4. Weekly sync remains off. Configure a separate scheduled worker and enable the weekly 120-day refresh only after that deployment target, retry/alerting, and database have been reviewed. Do not run the worker inside an API process.
-5. Obtain local agronomist/farmer review for provisional crop traits and location-specific calendars before describing generated rankings as locally validated planting advice. Kintampo requires calendar evidence before it can produce scheduled rotations.
+5. Obtain local agronomist/farmer review for provisional crop traits and location-specific calendars before describing generated rankings as locally validated planting advice. Apply the Kintampo seed revision in the intended environment to make its provisional windows schedulable.
 
 ## 11. Implementation order / file-level plan
 

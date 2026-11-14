@@ -16,6 +16,12 @@ export interface ScheduledCropEvent {
   calendar_source: string;
   calendar_version: string;
   calendar_status: string;
+  calendar_evidence?: {
+    source_url: string | null;
+    window_basis: 'zone_guidance' | 'local_trial_analogue' | null;
+    applicability: string;
+    limitations: string;
+  } | null;
 }
 
 export interface RotationStepScore {

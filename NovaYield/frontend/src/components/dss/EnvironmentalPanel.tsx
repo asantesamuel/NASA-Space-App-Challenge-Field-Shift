@@ -4,6 +4,7 @@ import type {
   FarmEnvironmentalStatusResponse,
 } from '../../api/farms';
 import DataSourceBadge from '../common/DataSourceBadge';
+import { AlertIcon, InfoIcon } from '../icons';
 import {
   CategoryPill,
   CoverageNotes,
@@ -22,16 +23,16 @@ function WeatherWindow({ finding }: { finding: EnvironmentalWindowFinding }) {
       <div className="weather-card-head">
         <div>
           <h3>{title}</h3>
-          <p className="rotation-meta">
+          <p className="panel-sub">
             <time dateTime={finding.start_date}>{formatDay(finding.start_date)}</time>
-            {' '}to{' '}
+            {' – '}
             <time dateTime={finding.end_date}>{formatDay(finding.end_date)}</time>
-            {' '}· Data through {finding.data_through ? formatDay(finding.data_through) : 'unknown'}
+            {' · '}Data through {finding.data_through ? formatDay(finding.data_through) : 'unknown'}
           </p>
         </div>
         <StatusPill status={finding.status} />
       </div>
-      <div className="pill-row">
+      <div className="row">
         <CategoryPill prefix="Rain" category={finding.rainfall_category} />
         {finding.window_type === 'crop_event' && <CategoryPill prefix="Heat" category={finding.temperature_category} />}
         {finding.window_type === 'crop_event' && <CategoryPill category={finding.dry_spell_category} />}
@@ -59,31 +60,38 @@ export default function EnvironmentalPanel({
     : status?.status || 'unavailable';
 
   return (
-    <section className="environmental-panel" aria-labelledby="environment-heading">
-      <div className="section-heading">
+    <section className="panel" aria-labelledby="environment-heading">
+      <div className="panel-header">
         <div>
-          <p className="kicker">Climate record</p>
-          <h2 id="environment-heading">Stored environmental context</h2>
+          <h2 className="panel-title" id="environment-heading">Stored climate record</h2>
         </div>
         {status && <StatusPill status={status.status} />}
       </div>
-      <DataSourceBadge
-        status={badgeStatus}
-        source={status?.source || 'NASA POWER Daily API'}
-        dateRange={rangeText}
-        resolution={status?.spatial_resolution}
-      />
-      {status?.safe_message && <p className="alert alert-warning">{status.safe_message}</p>}
-      {status?.status === 'partial' && <p>Missing source values remain null; each window below shows its valid and missing day counts.</p>}
-      {analysis?.crop_windows.length ? (
-        <div className="insight-grid">
-          {analysis.crop_windows.map((finding, index) => (
-            <WeatherWindow key={`${finding.crop_key}-${finding.start_date}-${index}`} finding={finding} />
-          ))}
-          {analysis.since_harvest && <WeatherWindow finding={analysis.since_harvest} />}
-        </div>
-      ) : <p>Weather indicators remain unavailable until the background climate loader finishes.</p>}
-      <p className="disclaimer">These are historical NASA grid-cell conditions, not a forecast, farm sensor, soil-moisture reading, or crop-damage estimate.</p>
+      <div className="panel-body stack">
+        <DataSourceBadge
+          status={badgeStatus}
+          source={status?.source || 'NASA POWER Daily API'}
+          dateRange={rangeText}
+          resolution={status?.spatial_resolution}
+        />
+        {status?.safe_message && (
+          <p className="alert alert-warning"><AlertIcon />{status.safe_message}</p>
+        )}
+        {status?.status === 'partial' && (
+          <p className="alert"><InfoIcon />Missing source values remain null. Each window below shows its valid and missing day counts.</p>
+        )}
+        {analysis?.crop_windows.length ? (
+          <div className="insight-grid">
+            {analysis.crop_windows.map((finding, index) => (
+              <WeatherWindow key={`${finding.crop_key}-${finding.start_date}-${index}`} finding={finding} />
+            ))}
+            {analysis.since_harvest && <WeatherWindow finding={analysis.since_harvest} />}
+          </div>
+        ) : (
+          <p className="muted">Weather indicators stay unavailable until the background climate loader finishes.</p>
+        )}
+        <p className="disclaimer">These are historical NASA grid-cell conditions. They are not a forecast, a farm sensor, a soil-moisture reading, or a crop-damage estimate.</p>
+      </div>
     </section>
   );
 }

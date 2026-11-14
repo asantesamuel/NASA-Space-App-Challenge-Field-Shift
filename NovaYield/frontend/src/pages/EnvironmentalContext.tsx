@@ -9,6 +9,8 @@ import ErrorState from '../components/common/ErrorState';
 import LoadingState from '../components/common/LoadingState';
 import EnvironmentalPanel from '../components/dss/EnvironmentalPanel';
 import { formatDay } from '../components/dss/format';
+import { RefreshIcon } from '../components/icons';
+import PlotTabs from '../components/PlotTabs';
 
 export default function EnvironmentalContext() {
   const { farmId = '' } = useParams();
@@ -43,41 +45,34 @@ export default function EnvironmentalContext() {
     void Promise.resolve().then(() => loadContext());
   }, [loadContext]);
 
-  if (loading || loadedFarmId !== farmId) return <LoadingState message="Loading stored environmental context…" />;
+  if (loading || loadedFarmId !== farmId) return <LoadingState message="Loading stored climate…" />;
   if (error || !farm) return <ErrorState message={error || 'This plot could not be found.'} onRetry={() => { setLoading(true); void loadContext(); }} />;
 
   const encodedFarmId = encodeURIComponent(farm.id);
 
   return (
-    <div className="page-container comparison-page environment-page">
-      <header className="page-heading-row">
-        <div>
-          <Link className="back-link" to={`/plots/${encodedFarmId}`}>← {farm.name}</Link>
-          <p className="kicker">Environmental context</p>
-          <h1>Stored climate for {farm.name}</h1>
-          <p className="lede">Review historical NASA POWER conditions aligned to the actual crop-history dates recorded for this plot.</p>
+    <div className="page">
+      <header className="page-header with-tabs">
+        <div className="page-head-main">
+          <h1>{farm.name}</h1>
+          <ul className="meta-list">
+            <li>{farm.location.label}</li>
+            <li><b>{farm.crop_history.length}</b> crop event{farm.crop_history.length === 1 ? '' : 's'} analysed</li>
+            {environment?.data_through && <li>Stored through <b>{formatDay(environment.data_through)}</b></li>}
+          </ul>
         </div>
-        <button className="secondary-btn" type="button" disabled={refreshing} onClick={() => void loadContext(true)}>
-          {refreshing ? 'Checking stored context…' : 'Refresh status'}
-        </button>
+        <div className="page-actions">
+          <button className="btn btn-secondary" type="button" disabled={refreshing} onClick={() => void loadContext(true)}>
+            <RefreshIcon />{refreshing ? 'Checking…' : 'Refresh status'}
+          </button>
+          <Link className="btn btn-primary" to={`/plots/${encodedFarmId}/recommendations`}>View recommendations</Link>
+        </div>
       </header>
+      <PlotTabs farmId={farm.id} />
 
-      <div className="environment-plot-summary">
-        <span><b>Location</b> {farm.location.label}</span>
-        <span><b>History windows</b> {farm.crop_history.length} reported crop event{farm.crop_history.length === 1 ? '' : 's'}</span>
-        {environment?.data_through && <span><b>Stored through</b> {formatDay(environment.data_through)}</span>}
+      <div className="page-body">
+        <EnvironmentalPanel status={environment} analysis={environment?.analysis || null} />
       </div>
-
-      <EnvironmentalPanel status={environment} analysis={environment?.analysis || null} />
-
-      <section className="context-next-step">
-        <div>
-          <p className="kicker">Next step</p>
-          <h2>Review this plot’s recommendations</h2>
-          <p>The recommendation page uses available stored context and shows which weather adjustment, if any, was applied.</p>
-        </div>
-        <Link className="submit-btn" to={`/plots/${encodedFarmId}/recommendations`}>Open recommendations</Link>
-      </section>
     </div>
   );
 }
