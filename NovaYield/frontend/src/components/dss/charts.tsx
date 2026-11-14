@@ -18,22 +18,24 @@ export function StatusPill({ status }: { status: string }) {
       : status === 'error' || status === 'unavailable' || status === 'no_options'
         ? 'alert'
         : 'neutral';
-  return <span className={`status-pill tone-${tone}`}>{label(status)}</span>;
+  return <span className={`badge badge-dot tone-${tone}`}>{label(status)}</span>;
 }
 
 export function CategoryPill({ category, prefix }: { category: string | null | undefined; prefix?: string }) {
   const tone = categoryTone(category);
   const text = category ? `${prefix ? `${prefix} ` : ''}${category}` : 'Unavailable';
-  return <span className={`category-pill tone-${tone}`}>{text}</span>;
+  return <span className={`badge tone-${tone}`}>{text}</span>;
 }
 
 export function SequenceRail({
   steps,
+  large = false,
 }: {
   steps: { key: string; name: string; detail?: string }[];
+  large?: boolean;
 }) {
   return (
-    <ol className="sequence-rail">
+    <ol className={large ? 'sequence sequence-lg' : 'sequence'}>
       {steps.map((step, index) => (
         <li key={`${step.key}-${index}`}>
           <span className="sequence-node" style={{ background: cropColor(step.key) }} aria-hidden="true">
@@ -264,12 +266,12 @@ export function ScoreBoard({ options }: { options: RotationOption[] }) {
 
 export function DiversityMeter({ transitions }: { transitions: number }) {
   return (
-    <div className="diversity-meter" aria-label={`${transitions} of 2 adjacent seasons change crop group.`}>
+    <div className="diversity" aria-label={`${transitions} of 2 adjacent seasons change crop group.`}>
       <span>Crop-group changes</span>
-      <div>
+      <div className="diversity-dots">
         {[0, 1].map((index) => <i key={index} className={index < transitions ? 'on' : ''} />)}
       </div>
-      <b>{transitions} / 2</b>
+      <b>{transitions} of 2</b>
     </div>
   );
 }

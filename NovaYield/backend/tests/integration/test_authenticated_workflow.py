@@ -19,6 +19,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from pydantic import SecretStr
+from pymongo.errors import DuplicateKeyError
 
 from app.core.config import Settings
 from app.database.connection import MongoConnection
@@ -26,6 +27,8 @@ from app.farms.location_catalog import SUPPORTED_LOCATION_SEEDS
 from app.integrations.nasa.power import nasa_grid_cell_key
 from app.main import create_app
 from app.models.climate_store import ClimateDaily
+from app.models.crop_catalog import Crop, CropCalendar
+from app.models.rotation_results import RotationResult
 from app.repositories.analysis_config import AnalysisConfigRepository
 from app.repositories.climate_store import ClimateStoreRepository
 from app.repositories.crop_catalog import CropCatalogRepository
@@ -38,6 +41,145 @@ TEST_CSRF_SECRET = "product-direction-test-csrf-secret-at-least-32-bytes"
 TEST_LOCATION_SECRET = "product-direction-test-location-key-at-least-32-bytes"
 TEST_PASSWORD = f"Nova-{uuid4().hex}-GoodPass9!"
 PRIVATE_EJURA_COORDINATES = ("7.3856", "-1.3562")
+
+
+def test_kintampo_seed_preserves_curated_calendar_and_unique_active_scope() -> None:
+    uri = _local_test_uri()
+
+    async def run() -> None:
+        async with _isolated_app(uri):
+            catalog = CropCatalogRepository()
+            assert (await catalog.seed_missing())["calendars"] == 10
+            maize = await Crop.find_one({"crop_key": "maize"})
+            assert maize is not None
+            rows = await CropCalendar.find({"location_key": "kintampo"}).to_list()
+            assert len(rows) == 3
+            assert all(row.status == "provisional" and row.is_active for row in rows)
+            assert all(row.evidence and row.evidence.additional_source_urls for row in rows)
+            row = next(row for row in rows if row.crop_id == maize.id)
+            fields = row.model_dump(exclude={"id", "revision_id"})
+            fields["calendar_version"] = "operator-curated"
+            fields["source_note"] = "Curated test record."
+            with pytest.raises(DuplicateKeyError):
+                await CropCalendar(**fields).insert()
+            await row.delete()  # Remove the original only in this disposable database.
+            await CropCalendar(**fields).insert()
+            assert (await catalog.seed_missing())["calendars"] == 0
+            assert await CropCalendar.find(CropCalendar.location_key == "kintampo").count() == 3
+            assert await CropCalendar.find_one({"calendar_version": "operator-curated"})
+
+    asyncio.run(run())
+
+
+def test_kintampo_recommendation_round_trips_step_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.api import workflows
+
+    class March2027(date):
+        @classmethod
+        def today(cls) -> date:
+            return cls(2027, 3, 15)
+
+    monkeypatch.setattr(workflows, "date", March2027)
+    uri = _local_test_uri()
+
+    async def run() -> None:
+        async with _isolated_app(uri) as app:
+            await CropCatalogRepository().seed_missing()
+            await SupportedLocationRepository().seed_missing(SUPPORTED_LOCATION_SEEDS)
+            await FarmReferenceRepository().seed_missing()
+            await AnalysisConfigRepository().seed_default()
+            async with (
+                httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+                ) as owner,
+                httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+                ) as other,
+            ):
+                await _register_and_login(owner, "kintampo-owner@example.com")
+                await _register_and_login(other, "kintampo-other@example.com")
+                farm = await owner.post(
+                    "/api/v1/farms",
+                    json={
+                        "name": "Kintampo test plot",
+                        "location_key": "kintampo",
+                        "soil_texture_key": "loamy",
+                        "irrigation_access_key": "none",
+                        "labour_capacity": "Low",
+                        "available_from": "2027-03-15",
+                        "crop_history": [
+                            {
+                                "crop_key": "maize",
+                                "sequence_order": 1,
+                                "start_date": "2025-03-15",
+                                "end_date": "2025-07-02",
+                            }
+                        ],
+                    },
+                    headers=await _csrf_headers(owner),
+                )
+                assert farm.status_code == 201, farm.text
+                farm_path = f"/api/v1/farms/{farm.json()['id']}"
+                result = await owner.post(
+                    f"{farm_path}/recommendations", json={}, headers=await _csrf_headers(owner)
+                )
+                assert result.status_code == 201, result.text
+                body = result.json()
+                generation = body["recommendation"]
+                assert generation["status"] == "ranked"
+                assert generation["options"]
+                events = generation["options"][0]["events"]
+                assert events[0]["planting_date"] == "2027-03-15"
+                for event in events:
+                    assert event["crop_key"] == "maize"
+                    assert event["calendar_status"] == "provisional"
+                    assert event["calendar_version"] == "product-direction-kintampo-v1"
+                    assert event["calendar_evidence"]["window_basis"] == "zone_guidance"
+                    assert "shifting rains" in event["calendar_evidence"]["limitations"]
+                    assert event["calendar_evidence"]["source_url"].startswith(
+                        "https://mofa.gov.gh/"
+                    )
+                for previous, following in zip(events, events[1:], strict=False):
+                    assert date.fromisoformat(following["planting_date"]) >= (
+                        date.fromisoformat(previous["harvest_latest"]) + timedelta(days=14)
+                    )
+                path = f"{farm_path}/rotation-results/{body['id']}"
+                saved = await owner.get(path)
+                assert saved.json()["product_direction"] == generation
+                assert all(word not in saved.text for word in ("latitude", "longitude", "geometry"))
+                missing = await other.get(f"/api/v1/farms/{'0' * 24}/rotation-results/{body['id']}")
+                unowned = await other.get(path)
+                assert unowned.status_code == missing.status_code == 404
+                assert unowned.json() == missing.json()
+                missing_result = await owner.get(f"{farm_path}/rotation-results/{'0' * 24}")
+                assert missing_result.status_code == 404
+
+                # Simulate a previously saved result before the optional field existed.
+                record = await RotationResult.find_one({})
+                assert record is not None
+                await record.get_pymongo_collection().update_one(
+                    {"_id": record.id},
+                    {"$unset": {"product_direction.options.$[].events.$[].calendar_evidence": ""}},
+                )
+                legacy = await owner.get(path)
+                assert legacy.status_code == 200
+                assert (
+                    "calendar_evidence"
+                    not in (legacy.json()["product_direction"]["options"][0]["events"][0])
+                )
+                for calendar in await CropCalendar.find({"location_key": "kintampo"}).to_list():
+                    calendar.is_active = False
+                    await calendar.save()
+                unavailable = await owner.post(
+                    f"{farm_path}/recommendations", json={}, headers=await _csrf_headers(owner)
+                )
+                assert unavailable.status_code == 201
+                assert unavailable.json()["recommendation"]["status"] == "no_options"
+                assert unavailable.json()["recommendation"]["reason"]
+
+    asyncio.run(run())
 
 
 def _local_test_uri() -> str:

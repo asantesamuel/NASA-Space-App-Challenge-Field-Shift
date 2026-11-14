@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import AuthShell from '../components/AuthShell';
+import { AlertIcon, EyeIcon, EyeOffIcon } from '../components/icons';
 import { useAuth } from '../context/auth-context';
 
 export default function SignUp() {
@@ -8,7 +10,7 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const { signup, isLoading, error } = useAuth();
   const navigate = useNavigate();
 
@@ -29,104 +31,79 @@ export default function SignUp() {
     }
   };
 
+  const message = localError || error;
+
   return (
-    <div className="auth-page">
-      <div className="auth-left">
-        <div className="auth-container">
-          <Link to="/" className="auth-logo">
-            NovaYield
-          </Link>
+    <AuthShell
+      title="Create your account"
+      subtitle="Set up your plots and compare rotation options."
+      footer={<>Already have an account? <Link to="/login">Log in</Link></>}
+      asideTitle="Start with your plot’s history."
+      asideText="NovaYield adds regional climate context and explains the trade-offs behind each rotation."
+      asidePoints={[
+        'Keep each plot and its crop events organised in one place.',
+        'Uses stored NASA POWER observations, not a weather forecast.',
+        'See relative criteria, planting windows, and key assumptions.',
+      ]}
+    >
+      {message && <p className="alert alert-error" role="alert"><AlertIcon />{message}</p>}
 
-          <div className="auth-header">
-            <h1>Create account</h1>
-            <p>Join NovaYield to start optimizing your fields.</p>
-          </div>
+      <form onSubmit={handleSubmit} className="auth-form">
+        <div className="field">
+          <label className="label" htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input"
+            placeholder="you@example.com"
+            required
+          />
+        </div>
 
-          {(error || localError) && (
-            <p className="alert alert-error auth-error" role="alert">
-              {localError || error}
-            </p>
-          )}
-          
-          <form onSubmit={handleSubmit} className="form-grid auth-form">
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input 
-                id="email"
-                type="email" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                className="form-input"
-                placeholder="Your Email"
-                required 
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="password-field">
-                <input 
-                  id="password"
-                  type={showPassword ? 'text' : 'password'} 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  className="form-input"
-                  placeholder="Password"
-                  aria-describedby="password-visibility-hint"
-                  required 
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  aria-pressed={showPassword}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </button>
-              </div>
-              <small id="password-visibility-hint">Use the eye control to show or hide your password.</small>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="confirm-password">Confirm Password</label>
-              <input 
-                id="confirm-password"
-                type="password" 
-                value={confirmPassword} 
-                onChange={e => setConfirmPassword(e.target.value)} 
-                className="form-input"
-                placeholder="Confirm Password"
-                required 
-              />
-            </div>
-
-            <button type="submit" className="submit-btn auth-submit" disabled={isLoading}>
-              {isLoading ? 'Creating account…' : 'Create account'}
+        <div className="field">
+          <label className="label" htmlFor="password">Password</label>
+          <div className="password-field">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="icon-btn"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </button>
-          </form>
-          
-          <div className="auth-footer">
-            Already have an account? <Link to="/login" className="nav-link auth-inline-link">Log in</Link>
           </div>
         </div>
-      </div>
 
-      <div className="auth-right">
-        <div className="brand-display">
-          <p className="kicker">Field-aware decision support</p>
-          <h2>NovaYield</h2>
-          <p>Start with your plot’s history. NovaYield adds regional climate context and explains the trade-offs behind each rotation.</p>
-          <ul className="auth-points">
-            <li><strong>One plot at a time</strong><span>Keep each decision plot and its crop events organized.</span></li>
-            <li><strong>Historical context</strong><span>Use stored NASA POWER observations, not a weather forecast.</span></li>
-            <li><strong>Clear comparisons</strong><span>See relative criteria, planting windows, and key assumptions.</span></li>
-          </ul>
+        <div className="field">
+          <label className="label" htmlFor="confirm-password">Confirm password</label>
+          <input
+            id="confirm-password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="input"
+            required
+          />
         </div>
-      </div>
-    </div>
+
+        <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
+          {isLoading ? 'Creating account…' : 'Create account'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

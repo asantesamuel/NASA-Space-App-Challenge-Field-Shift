@@ -161,9 +161,11 @@ def _source(
     applicability: str,
     limitations: str,
     study_location: str | None = None,
+    additional_source_urls: tuple[str, ...] = (),
 ) -> SourceEvidence:
     return SourceEvidence(
         source_url=url,
+        additional_source_urls=additional_source_urls,
         source_title=title,
         study_location=study_location,
         agroecological_zone="Ghana forest–savanna transition" if url == CSIR_VARIETIES else None,
@@ -460,7 +462,64 @@ REFERENCE_OPTION_SEEDS: tuple[dict[str, Any], ...] = (
 )
 
 
+KINTAMPO_CALENDAR_VERSION = "product-direction-kintampo-v1"
+KINTAMPO_SEASON_ASSESSMENT = (
+    "https://napglobalnetwork.org/wp-content/uploads/2025/07/ghana-2024-cvra-report-kintampo.pdf"
+)
+
 REGIONAL_CALENDAR_SEEDS: tuple[dict[str, Any], ...] = (
+    *(
+        dict(
+            location_key="kintampo",
+            crop_key="maize",
+            season_key=season,
+            start_month_day=start,
+            end_month_day=end,
+            crosses_year=False,
+            calendar_version=KINTAMPO_CALENDAR_VERSION,
+            source_url=MOFA_MAIZE,
+            source_title="Ghana MoFA Maize Production Guide, section 5.1",
+            additional_source_urls=(KINTAMPO_SEASON_ASSESSMENT,),
+            evidence_status="provisional",
+            window_basis="zone_guidance",
+            applicability="Transition-zone maize guidance applied provisionally to Kintampo North.",
+            source_note=f"{encoding} The municipal assessment reports shifting rains and "
+            "variation among communities. Check current planting guidance with local extension.",
+        )
+        for season, start, end, encoding in (
+            ("major-rainy-season", "03-15", "04-30", "March 15 encodes mid-March."),
+            (
+                "minor-rainy-season",
+                "07-15",
+                "09-10",
+                "July 15 and September 10 encode mid-July and early September.",
+            ),
+        )
+    ),
+    dict(
+        location_key="kintampo",
+        crop_key="yam",
+        season_key="major-rainy-season",
+        start_month_day="06-09",
+        end_month_day="06-21",
+        crosses_year=False,
+        calendar_version=KINTAMPO_CALENDAR_VERSION,
+        source_url="https://integrityresjournals.org/journal/JASP/article-abstract/CDDF73595",
+        source_title="Frimpong et al. (2020), Kintampo North yam trial, Table 1",
+        additional_source_urls=(KINTAMPO_SEASON_ASSESSMENT,),
+        evidence_status="provisional",
+        window_basis="local_trial_analogue",
+        applicability=(
+            "A provisional analogue for generic yam from Dente white yam in four Kintampo "
+            "North communities, planted on June 21 in 2015 and June 9–10 in 2016."
+        ),
+        source_note=(
+            "The intervening dates encode the observed span. Two trial seasons provide limited "
+            "evidence about optimal dates, other yam varieties and today's conditions. "
+            "The municipal assessment reports shifting rains. Check current planting guidance "
+            "with local extension."
+        ),
+    ),
     dict(
         location_key="ejura",
         crop_key="maize",

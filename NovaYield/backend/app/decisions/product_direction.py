@@ -49,6 +49,15 @@ class RotationCrop(BaseModel):
     assumptions: tuple[str, ...] = ()
 
 
+class CalendarEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source_url: str | None = None
+    window_basis: Literal["zone_guidance", "local_trial_analogue"] | None = None
+    applicability: str
+    limitations: str
+
+
 class PlantingCalendar(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -62,6 +71,7 @@ class PlantingCalendar(BaseModel):
     source: str
     version: str
     status: Literal["provisional", "locally_reviewed"] = "provisional"
+    evidence: CalendarEvidence | None = None
 
 
 class CropHistoryWeather(BaseModel):
@@ -101,6 +111,7 @@ class ScheduledEvent(BaseModel):
     calendar_source: str
     calendar_version: str
     calendar_status: str
+    calendar_evidence: CalendarEvidence | None = None
 
 
 class RotationStepScore(BaseModel):
@@ -282,6 +293,7 @@ def schedule_rotation(
                 calendar_source=calendar.source,
                 calendar_version=calendar.version,
                 calendar_status=calendar.status,
+                calendar_evidence=calendar.evidence,
             )
         )
         earliest = harvest_latest + timedelta(days=turnaround_days)
