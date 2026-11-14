@@ -1,0 +1,106 @@
+---
+title: NY-8 public-data demo profile candidate
+status: Provisional evidence-backed area archetype; not an individual farm or validated recommendation profile
+version: 0.3
+prepared: 2026-11-04
+---
+
+# NY-8 Public-Data Demo Profile Candidate
+
+## Purpose and status
+
+This profile assembles public information for a repeatable NovaYield decision-support scenario without inventing the characteristics or history of a real farm. It is an **area-level archetype**, not an individual farm, and is not locally validated. It can support input-contract, source/provenance, and provisional crop-class ranking behavior. It cannot establish farm water sufficiency or validate the resulting recommendations.
+
+The Product Owner's approved decisions in [the NovaYield research and product-decision record](../../novayield-research-and-product-decisions.md), especially Decision 13, remain controlling: all four criteria are preferred when comparable, with farmer-priority water/soil fallback when they are not. All desk-research crop classes remain provisional. Alternatives without comparable water evidence remain unranked.
+
+## Proposed profile
+
+| Field | Publicly supported value for this profile | Evidence and limit |
+| --- | --- | --- |
+| Profile ID / type | `ejura-public-evidence-v1`; public-data area archetype | A reproducible research fixture, not a registered farmer or field. |
+| Pilot area | Ejura-Sekyedumase Municipality, Ashanti Region, Ghana | Approved provisionally by the Product Owner. The municipal profile describes a forest–savanna transition with differing rainfall regimes within the municipality. |
+| Candidate reference communities | Ejura and Anyinasu; Kasei may be retained as a third candidate | A 2022 study sampled Ejura, Kasei, and Anyinasu and says the communities were selected with the Municipal Agriculture Directorate to cover a wider spread. That study selection is supporting evidence, not NovaYield extension approval. |
+| Public place coordinates | Ejura: `7.3856, -1.3562`; Anyinasu: `7.23705, -1.57696` | Gazetteer/place points, not farm coordinates or field centroids. Both fall inside the municipality bounds published by the Assembly. Keep the points provisional and verify their location/grid metadata in an actual NASA response. |
+| Farming-system context | Smallholder-oriented and predominantly rain-fed for the surveyed food crops | In the 2020 maize-failure study, 88% of 40 respondents reported no irrigation farming; crop production other than vegetables was described as rain-fed. This is a sample-level context, not a fact about a particular farm. |
+| Farm size | Unknown for the profile | Survey respondents covered multiple farm-size categories; selecting one value would fabricate a representative individual. |
+| Plot soil texture / soil test | Unknown | Published municipality-level soil descriptions are not plot measurements. Do not infer a soil-health score or crop-specific soil threshold from the municipal description. |
+| Plot irrigation access | Unknown; the scenario is labelled `rainfed_archetype` only for area-level context | The 88% survey result does not identify the irrigation status of any individual farm. Do not silently turn the group statistic into a farmer answer. |
+| Candidate crop records | Maize, cowpea, groundnut, cassava, yam, and rice | These are the approved MVP candidates. Public municipal and study sources confirm crop presence, not every crop's traits, suitability, or eligibility for every sequence. |
+| Plot's previous crops / current practice | Unknown | The published sources describe area practices and survey responses, not a complete three-event history for a particular plot. Therefore this profile has no asserted current-practice baseline. |
+| Ranking precedence | Four-criterion weighted comparison when comparable; otherwise farmer-priority water/soil fallback, or water-only if soil is not comparable | This reflects Product Owner Decision 13, not a surveyed farmer's preference. It does not permit unsupported criterion ratings. |
+
+### Candidate public reference points
+
+| Community | Latitude | Longitude | Coordinate source | Status |
+| --- | ---: | ---: | --- | --- |
+| Ejura | 7.3856 | -1.3562 | [Getty Thesaurus of Geographic Names](https://www.getty.edu/vow/TGNFullDisplay?english=Y&find=&nation=&subjectid=1090118), whose record identifies Ejura as an inhabited place and cites the Times Atlas / NGA gazetteer | Candidate public place point; not an approved farm coordinate |
+| Anyinasu | 7.23705 | -1.57696 | [Mapcarta locality record](https://mapcarta.com/16954496), based on OpenStreetMap / GeoNames place data | Candidate public place point; confirm with local extension before treating as a representative pilot point |
+| Kasei | Not set | Not set | Named as a study community in the [2020 maize-failure study](https://www.mdpi.com/2071-1050/14/6/3514) | Keep as a candidate until an authoritative public place point is verified |
+
+NASA POWER's meteorology products are gridded, and nearby points can resolve to the same grid cell. Do not assume these two points provide independent climate observations. Capture and compare the returned grid metadata before describing any spatial difference.
+
+## Season and environmental-data inputs
+
+The 2020 maize-failure paper used **April–July** as its major-season analysis window and **September–October** as its minor-season analysis window for its 2015–2020 analysis. Those month ranges provide reproducible **historical analysis windows** for the profile; they are not verified planting dates or an approved crop/community calendar. A KNUST study of 1993–2006 rainfall estimated planting dates of 8 April and 31 August, demonstrating that published timing is source- and period-dependent; do not treat those historical dates as current prescriptions.
+
+For a three-event climate-input fixture, the candidate windows are:
+
+| Planting-event label | Inclusive environmental-data window | Calendar status |
+| --- | --- | --- |
+| `major-2019` | 2019-04-01 through 2019-07-31 | Provisional study-defined analysis window |
+| `minor-2019` | 2019-09-01 through 2019-10-31 | Provisional study-defined analysis window |
+| `major-2020` | 2020-04-01 through 2020-07-31 | Provisional study-defined analysis window |
+
+The three windows are consecutive named seasonal periods for repeatable historical data retrieval, not a claim that a specific farm planted a crop on a known date. They must not activate calendar-dependent hard rules or be presented as validated planting advice.
+
+The intended public data contract is the NY-13 / NASA POWER Daily Point request: `PRECTOTCORR`, `T2M`, and `T2M_MAX`, `community=AG`, JSON, inclusive dates, and explicit `time-standard=UTC`. **No API response values are stored in this profile yet.** The browsing tool could confirm NASA's API contract but could not retrieve the live JSON response for these query URLs. Before using numeric values, run the existing NY-5 client at the selected public points, capture the response, and verify each parameter's units, fill value, source, coverage, and spatial resolution from NASA's response metadata. Do not treat this evidence file as a cache or runtime-data store.
+
+For the later NY-9 API integration, use the [NY-9 pilot season-calendar evidence handoff](ny-9-pilot-season-calendar-evidence.md) to distinguish these historical weather-analysis periods from crop planting windows and actual farm history. The periods below remain research query windows; they are not NY-8 planting-event slots or planting advice.
+
+## Public evidence relevant to rotation patterns
+
+The sources support some rotation relationships, but **do not establish an ordered three-event history on a named plot for this profile**:
+
+- **Cowpea before maize:** A Ghana forest–savanna transition-zone field study evaluated cowpea varieties followed by maize and found variety/biomass-dependent outcomes. This supports a possible legume-to-maize relationship; it is not a universal nitrogen credit or a complete three-season Ejura rotation.
+- **Maize with groundnut/beans:** The Ejura-Sekyedumase study reports that some respondents rotated maize with legumes, mainly groundnuts and beans. It does not give a named plot's full sequence or establish the order and dates of three planting events.
+- **Repeated maize:** The older MoFA district profile says maize may be grown on the same land for multiple years with fertilizer. This is broad historic context, not this profile's current practice or a verified baseline.
+
+Do not stitch these separate facts into three asserted sequences. The exact three-event patterns must come from a source that documents the sequence or remain explicit synthetic mechanics-only fixtures, never public recommendation data.
+
+NY-15's safe rules still apply: enforce three consecutive events on the same plot and data-integrity requirements; apply only explicitly reviewed, scoped agronomic constraints. Unknown rule inputs should produce `needs_review` or an inactive rule, not a guessed exclusion. Do not force the engine to return three options if fewer remain valid.
+
+## Criterion evidence and ranking readiness
+
+NY-8 prefers all four criteria when their evidence is comparable, and otherwise
+uses normalized farmer priorities over comparable water/soil evidence (or water
+alone when soil is not comparable). Water crop classes are normalized from cited
+desk research; this area archetype still lacks field water access, local
+variety/calendar, and actual NASA response values. See the
+[provisional crop-by-criterion evidence matrix](ny-8-crop-criterion-evidence-matrix.md)
+for evidence scope and limitations.
+
+| Criterion / scope note | Public evidence available | Profile status for scoring |
+| --- | --- | --- |
+| Water resilience | Public sources support provisional relative crop classes for five crops; rice remains unassessed until its production ecology is known. No actual NASA response values are stored for these points/windows. | Not rank-ready: there is no individual farm history or NASA context. NY-9 withholds water assessment unless at least two of three approved indicators have usable values for each past period. |
+| Soil-health potential | Ghana legume/residue studies exist, but this profile has no soil test, plot residue history, or management record. | Active but `not_assessed`; omitted from fallback, which uses water alone. |
+| Yield-stability proxy | Local and regional crop studies do not establish comparable sequence-level stability ratings. | Active but `not_assessed`; selects fallback mode. |
+| Labour feasibility | Farm labour availability, plot area, operation timing, and machinery/service access are not captured. | Active but `not_assessed`; selects fallback mode. |
+
+This profile is **not rank-ready** and must not be used to produce a farmer-facing recommendation. It is an area archetype without a real farm, plot history, or stored NASA response. The current NY-9 workflow requires farmer-reported past seasons and usable NASA context for water assessment. If water cannot be assessed for enough alternatives on a common basis, no ranked shortlist is returned; missing soil, yield-stability, or labour evidence alone selects the documented fallback and does not block ranking. The cited crop classes alone do not supply the missing farm or NASA inputs. A real request must retain NASA source, coverage, freshness, and snapshot provenance.
+
+## Recommended use for NY-8
+
+- Use this profile as research context and to identify missingness; do not use it as a ranked API fixture or demo recommendation.
+- Preserve the cited rotation findings as evidence with their scope limits; do not turn them into unverified three-event sequences or universal hard agronomic rules.
+- Test ranking mechanics separately with clearly artificial unit-test values, labelled as synthetic test data and never reused as a public recommendation/demo result.
+- Before describing results as validated agronomic advice, obtain local crop/calendar/water-access review and test actual NASA response coverage. Do not treat this area archetype as a verified farm or its provisional rank as field-validated.
+
+## References
+
+- Ejura-Sekyedumase Municipal Assembly, [About the Municipality](https://esma.gov.gh/about-us/) and [Town Profile](https://esma.gov.gh/about-us/town-profile/): municipal boundaries, capital, agroecology, rainfall variation, and local crop context.
+- Obour, Arthur & Owusu (2022), [The 2020 Maize Production Failure in Ghana: A Case Study of Ejura-Sekyedumase Municipality](https://www.mdpi.com/2071-1050/14/6/3514), *Sustainability* 14(6), 3514: three study communities, survey/farm context, local crop practices, seasonal analysis windows, and the 2020 failure. Its sample is not a specific demo farm.
+- Obeng (2008), [KNUST thesis on rainfall, temperature, and maize in Ejura-Sekyedumase](https://ir.knust.edu.gh/handle/123456789/1050): historical rainfall-derived planting-date analysis for 1993–2006; not a current calendar.
+- Adjei-Nsiah et al. (2008), [Cowpea varieties and succeeding maize in Ghana's forest–savanna transition zone](https://link.springer.com/article/10.1007/s10705-007-9133-3): variety-specific cowpea/maize field evidence; not a universal legume benefit.
+- Ghana Ministry of Food and Agriculture, [Ejura-Sekyedumase district profile](https://mofa.gov.gh/site/directorates/district-directorates/ashanti-region/164-ejura-sekyeredumase): local crops and historic farming-system observations; treat dated generalizations cautiously.
+- NASA POWER, [Daily API documentation](https://power.larc.nasa.gov/docs/services/api/temporal/daily/) and [data methodology](https://power.larc.nasa.gov/docs/methodology/): request/time-standard contract, daily data and spatial-resolution limitations.
+- Coordinates: [Getty TGN record for Ejura](https://www.getty.edu/vow/TGNFullDisplay?english=Y&find=&nation=&subjectid=1090118); [Anyinasu place record](https://mapcarta.com/16954496) (open geographic gazetteer data; community point requires local confirmation).
