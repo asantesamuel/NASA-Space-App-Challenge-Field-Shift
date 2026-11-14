@@ -279,15 +279,18 @@ class CropCatalogRepository:
                 published_at=datetime.now(UTC),
                 planting_window=planting_window,
                 status=seed["evidence_status"],
+                window_basis=seed.get("window_basis"),
                 evidence=_source(
                     seed["source_url"],
                     seed["source_title"],
                     source_confidence="moderate",
                     pilot_transferability="low",
-                    applicability=(
-                        "A scoped published seasonal window, active as a provisional MVP calendar."
+                    applicability=seed.get(
+                        "applicability",
+                        "A scoped published seasonal window, active as a provisional MVP calendar.",
                     ),
                     limitations=seed["source_note"],
+                    additional_source_urls=seed.get("additional_source_urls", ()),
                 ),
                 source_note=seed["source_note"],
             )

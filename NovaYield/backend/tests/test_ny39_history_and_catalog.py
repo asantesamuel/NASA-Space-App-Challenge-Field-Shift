@@ -170,7 +170,21 @@ def test_single_shared_catalog_has_scoped_rice_and_history_only_crops() -> None:
 def test_seeded_calendars_are_active_scoped_examples_with_provisional_evidence() -> None:
     assert all(seed["source_note"] for seed in REGIONAL_CALENDAR_SEEDS)
     assert all(seed["evidence_status"] == "provisional" for seed in REGIONAL_CALENDAR_SEEDS)
-    assert {seed["location_key"] for seed in REGIONAL_CALENDAR_SEEDS} == {"ejura", "anyinasu"}
+    assert {seed["location_key"] for seed in REGIONAL_CALENDAR_SEEDS} == {
+        "ejura",
+        "anyinasu",
+        "kintampo",
+    }
+    kintampo = [seed for seed in REGIONAL_CALENDAR_SEEDS if seed["location_key"] == "kintampo"]
+    assert {
+        (row["crop_key"], row["season_key"], row["start_month_day"], row["end_month_day"])
+        for row in kintampo
+    } == {
+        ("maize", "major-rainy-season", "03-15", "04-30"),
+        ("maize", "minor-rainy-season", "07-15", "09-10"),
+        ("yam", "major-rainy-season", "06-09", "06-21"),
+    }
+    assert all(not row["crosses_year"] for row in kintampo)
     assert not any(
         seed["crop_key"] in {"groundnut", "cassava", "rice"} for seed in REGIONAL_CALENDAR_SEEDS
     )

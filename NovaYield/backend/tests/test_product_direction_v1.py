@@ -7,6 +7,7 @@ from app.decisions.environmental_analysis import (
     analyze_since_harvest,
 )
 from app.decisions.product_direction import (
+    CalendarEvidence,
     CropHistoryWeather,
     PlantingCalendar,
     RotationCrop,
@@ -297,6 +298,42 @@ def _calendar(key: str, group: str) -> PlantingCalendar:
         source=f"test-{group}",
         version="test-v1",
     )
+
+
+def test_kintampo_yam_step_preserves_trial_evidence() -> None:
+    today = date(2027, 6, 9)
+    yam = _crop("yam", "Root/tuber", labour="High", maturity=180)
+    maize = _crop("maize", "Cereal", maturity=90)
+    trial = CalendarEvidence(
+        window_basis="local_trial_analogue",
+        applicability="Dente white yam",
+        limitations="Two trial seasons",
+    )
+    yam_window = PlantingCalendar(
+        location_key="kintampo",
+        crop_key="yam",
+        season_key="major",
+        start_month=6,
+        start_day=9,
+        end_month=6,
+        end_day=21,
+        source="Kintampo North trial",
+        version="test-v1",
+        evidence=trial,
+    )
+    maize_window = _calendar("maize", "Cereal").model_copy(update={"location_key": "kintampo"})
+    events = schedule_rotation(
+        crop_keys=("yam", "maize", "maize"),
+        crops_by_key={"yam": yam, "maize": maize},
+        calendars=(yam_window, maize_window),
+        location_key="kintampo",
+        available_from=today,
+        today=today,
+    )
+    assert events is not None
+    assert today <= events[0].planting_date <= date(2027, 6, 21)
+    assert events[0].calendar_evidence == trial
+    assert events[1].calendar_evidence is None
 
 
 def _generate(

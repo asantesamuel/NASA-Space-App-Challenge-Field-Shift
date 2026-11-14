@@ -279,6 +279,7 @@ class CropCalendar(Document):
     planting_window: PlantingWindow | None = None
     harvest_or_maturity_basis: EvidenceValue | None = None
     evidence: SourceEvidence | None = None
+    window_basis: Literal["zone_guidance", "local_trial_analogue"] | None = None
     status: EvidenceStatus = "unknown"
     source_note: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

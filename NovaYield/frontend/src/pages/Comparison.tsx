@@ -83,7 +83,23 @@ function RotationCard({ option }: { option: RotationOption }) {
                     </td>
                     <td>
                       {label(event.calendar_status)}
-                      <small>{event.calendar_source}</small>
+                      <small>
+                        {event.calendar_evidence?.source_url ? (
+                          <a href={event.calendar_evidence.source_url} target="_blank" rel="noreferrer">
+                            {event.calendar_source}
+                          </a>
+                        ) : event.calendar_source}
+                      </small>
+                      {event.calendar_evidence && (
+                        <details>
+                          <summary>Scope and limitations</summary>
+                          {event.calendar_evidence.window_basis && (
+                            <small>{label(event.calendar_evidence.window_basis)}</small>
+                          )}
+                          <small>{event.calendar_evidence.applicability}</small>
+                          <small>{event.calendar_evidence.limitations}</small>
+                        </details>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -367,6 +383,14 @@ export default function Comparison() {
             {recommendation.options.length > 0 ? (
               <section className="stack-sm" aria-labelledby="options-heading">
                 <h2 id="options-heading">Ranked rotation options</h2>
+                {recommendation.options.some((option) => option.events.some(
+                  (event) => event.calendar_version === 'product-direction-kintampo-v1',
+                )) && (
+                  <p className="disclaimer">
+                    Kintampo’s provisional windows are historical planning assumptions.
+                    Check current planting guidance with local extension.
+                  </p>
+                )}
                 <ScoreBoard options={recommendation.options.slice(0, 3)} />
                 <div className="option-list">
                   {recommendation.options.slice(0, 3).map((option: RotationOption) => <RotationCard key={option.rank} option={option} />)}

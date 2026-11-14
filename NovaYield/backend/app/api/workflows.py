@@ -16,12 +16,14 @@ from app.decisions.environmental_analysis import (
     analyze_farm_history,
 )
 from app.decisions.product_direction import (
+    CalendarEvidence,
     CropHistoryWeather,
     PlantingCalendar,
     RotationCrop,
     derive_growth_speed,
     generate_ranked_rotations,
 )
+from app.farms.catalog_seed_data import REGIONAL_CALENDAR_SEEDS
 from app.farms.routes import (
     get_crop_catalog_repository,
     get_farm_repository,
@@ -55,6 +57,7 @@ ENVIRONMENTAL_SERVICE_UNAVAILABLE_DETAIL = "Environmental data is temporarily un
 ROTATION_RESULT_UNAVAILABLE_DETAIL = "The rotation result could not be saved. Please retry."
 CATALOG_UNAVAILABLE_DETAIL = "The crop and calendar catalogs are temporarily unavailable."
 ANALYSIS_CONFIGURATION_UNAVAILABLE_DETAIL = "Decision configuration is temporarily unavailable."
+PUBLIC_CALENDAR_SOURCE_URLS = frozenset(seed["source_url"] for seed in REGIONAL_CALENDAR_SEEDS)
 
 
 def get_climate_store_repository() -> ClimateStoreRepository:
@@ -532,6 +535,17 @@ def _planting_calendar(calendar: CropCalendar, crop_key: str) -> PlantingCalenda
         return None
     start_month, start_day = (int(part) for part in window.start_month_day.split("-"))
     end_month, end_day = (int(part) for part in window.end_month_day.split("-"))
+    source = calendar.evidence
+    public_evidence = (
+        CalendarEvidence(
+            source_url=source.source_url,
+            window_basis=calendar.window_basis,
+            applicability=source.applicability,
+            limitations=source.limitations,
+        )
+        if source is not None and source.source_url in PUBLIC_CALENDAR_SOURCE_URLS
+        else None
+    )
     return PlantingCalendar(
         location_key=calendar.location_key,
         crop_key=crop_key,
@@ -540,13 +554,10 @@ def _planting_calendar(calendar: CropCalendar, crop_key: str) -> PlantingCalenda
         start_day=start_day,
         end_month=end_month,
         end_day=end_day,
-        source=(
-            calendar.evidence.source_title
-            if calendar.evidence
-            else calendar.source_note or "Unspecified"
-        ),
+        source=source.source_title if source else calendar.source_note or "Unspecified",
         version=calendar.calendar_version,
         status=("locally_reviewed" if calendar.status == "locally_reviewed" else "provisional"),
+        evidence=public_evidence,
     )
 
 
